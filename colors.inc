@@ -1,0 +1,16 @@
+BLACK             = $00
+WHITE             = $01
+RED               = $02
+CYAN              = $03
+PURPLE            = $04
+GREEN             = $05
+BLUE              = $06
+YELLOW            = $07
+ORANGE            = $08
+BROWN             = $09
+PINK              = $0A
+DARK_GREY         = $0B
+GREY              = $0C
+LIGHT_GREEN       = $0D
+LIGHT_BLUE        = $0E
+LIGHT_GREY        = $0F
