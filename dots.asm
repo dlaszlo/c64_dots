@@ -28,6 +28,38 @@ COLOR1B           = WHITE
 COLOR2B           = LIGHT_BLUE
 COLOR3B           = BLUE
 
+COLOR0C           = BLACK
+COLOR1C           = YELLOW
+COLOR2C           = ORANGE
+COLOR3C           = RED
+COLOR0D           = BLACK
+COLOR1D           = WHITE
+COLOR2D           = LIGHT_GREEN
+COLOR3D           = GREEN
+COLOR0E           = BLACK
+COLOR1E           = WHITE
+COLOR2E           = GREY
+COLOR3E           = DARK_GREY
+
+
+; COLOR0B           = BLACK
+; COLOR1B           = WHITE
+; COLOR2B           = LIGHT_BLUE
+; COLOR3B           = BLUE
+; COLOR0C           = BLACK
+; COLOR1C           = YELLOW
+; COLOR2C           = ORANGE
+; COLOR3C           = RED
+; COLOR0D           = BLACK
+; COLOR1D           = BROWN
+; COLOR2D           = LIGHT_GREEN
+; COLOR3D           = GREEN
+; COLOR0E           = BLACK
+; COLOR1E           = CYAN
+; COLOR2E           = LIGHT_GREY
+; COLOR3E           = GREY
+
+
 *               = $8000
 
                 jsr     init_vic
@@ -54,8 +86,8 @@ COLOR3B           = BLUE
                 jsr     switch_vic_bank
                 jmp     -
 
-loop
 +
+                jsr     switch_vic_bank
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
@@ -74,23 +106,78 @@ loop
                 jsr     switch_vic_bank
                 jmp     -
 
+loop
 +
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
-
+                jsr     switch_vic_bank
+                jsr     setup_color2
                 jsr     effect2
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
                 jsr     switch_vic_bank
--               
-                inc     dots
+-               inc     dots
                 inc     dots
                 beq     +               
                 jsr     effect2
                 jsr     switch_vic_bank
                 jmp     -
+
++
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     setup_color3
+                jsr     effect3
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+-               inc     dots
+                inc     dots
+                beq     +
+                jsr     effect3
+                jsr     switch_vic_bank
+                jmp     -
+
++               jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     setup_color4
+                jsr     effect2
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+-               inc     dots
+                inc     dots
+                beq     +               
+                jsr     effect2
+                jsr     switch_vic_bank
+                jmp     -
+
++
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     setup_color4
+                jsr     effect3
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+-               inc     dots
+                inc     dots
+                beq     +
+                jsr     effect3
+                jsr     switch_vic_bank
+                jmp     -
+
 +               jmp     loop
 
 
@@ -392,6 +479,110 @@ setup_color2    lda     #$00
                 jmp     -
 +               rts
 
+setup_color3
+
+                ldx     20
+-               .for ya0 := 0, ya0 < 13, ya0 += 1
+                lda     #((COLOR3B << 4) + COLOR2B)
+                sta     COLOR1_ADDRESS1 + (ya0 * 40), x
+                sta     COLOR1_ADDRESS2 + (ya0 * 40), x
+                lda     #(COLOR1B)
+                sta     COLOR2_ADDRESS  + (ya0 * 40), x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               ldx     20
+-               .for ya1 := 0, ya1 < 13, ya1 += 1
+                lda     #((COLOR3C << 4) + COLOR2C)
+                sta     COLOR1_ADDRESS1 + (ya1 * 40) + 19, x
+                sta     COLOR1_ADDRESS2 + (ya1 * 40) + 19, x
+                lda     #(COLOR1C)
+                sta     COLOR2_ADDRESS  + (ya1 * 40) + 19, x
+                .next
+                dex
+                beq     +
+                jmp     -
+ 
++               ldx     20
+-               .for ya2 := 13, ya2 < 25, ya2 += 1
+                lda     #((COLOR3D << 4) + COLOR2D)
+                sta     COLOR1_ADDRESS1 + (ya2 * 40), x
+                sta     COLOR1_ADDRESS2 + (ya2 * 40), x
+                lda     #(COLOR1D)
+                sta     COLOR2_ADDRESS  + (ya2 * 40), x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               ldx     20
+-              .for ya3 := 13, ya3 < 25, ya3 += 1
+                lda     #((COLOR3E << 4) + COLOR2E)
+                sta     COLOR1_ADDRESS1 + (ya3 * 40) + 19, x
+                sta     COLOR1_ADDRESS2 + (ya3 * 40) + 19, x
+                lda     #(COLOR1E)
+                sta     COLOR2_ADDRESS  + (ya3 * 40) + 20, x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               rts
+
+setup_color4
+                ldx     20
+-               .for ya0 := 0, ya0 < 13, ya0 += 1
+                lda     #((COLOR3E << 4) + COLOR2E)
+                sta     COLOR1_ADDRESS1 + (ya0 * 40), x
+                sta     COLOR1_ADDRESS2 + (ya0 * 40), x
+                lda     #(COLOR1E)
+                sta     COLOR2_ADDRESS  + (ya0 * 40), x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               ldx     20
+-               .for ya1 := 0, ya1 < 13, ya1 += 1
+                lda     #((COLOR3D << 4) + COLOR2D)
+                sta     COLOR1_ADDRESS1 + (ya1 * 40) + 19, x
+                sta     COLOR1_ADDRESS2 + (ya1 * 40) + 19, x
+                lda     #(COLOR1D)
+                sta     COLOR2_ADDRESS  + (ya1 * 40) + 19, x
+                .next
+                dex
+                beq     +
+                jmp     -
+ 
++               ldx     20
+-               .for ya2 := 13, ya2 < 25, ya2 += 1
+                lda     #((COLOR3C << 4) + COLOR2C)
+                sta     COLOR1_ADDRESS1 + (ya2 * 40), x
+                sta     COLOR1_ADDRESS2 + (ya2 * 40), x
+                lda     #(COLOR1C)
+                sta     COLOR2_ADDRESS  + (ya2 * 40), x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               ldx     20
+-              .for ya3 := 13, ya3 < 25, ya3 += 1
+                lda     #((COLOR3B << 4) + COLOR2B)
+                sta     COLOR1_ADDRESS1 + (ya3 * 40) + 19, x
+                sta     COLOR1_ADDRESS2 + (ya3 * 40) + 19, x
+                lda     #(COLOR1B)
+                sta     COLOR2_ADDRESS  + (ya3 * 40) + 20, x
+                .next
+                dex
+                beq     +
+                jmp     -
+
++               rts
+
+
 ; ===========================
 ; Képernyő törlése
 ; ===========================
@@ -412,7 +603,7 @@ clearscreen     lda     #$00
 ; ===========================
 fade1           lda     #$00
                 tax
--               .for i := $500, i < $1800, i += $100
+-               .for i := $0, i < $2000, i += $100
                 lda     BITMAP_ADDRESS1 + i, x
                 cmp     #00
                 beq     +
@@ -430,7 +621,7 @@ fade1           lda     #$00
 ; ===========================
 fade2           lda     #$00
                 tax
--               .for i := $500, i < $1800, i += $100
+-               .for i := $0, i < $2000, i += $100
                 lda     BITMAP_ADDRESS2 + i, x
                 cmp     #00
                 beq     +
