@@ -107,24 +107,6 @@ xtablehigh
 	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 
-maskand
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-	.byte $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc, $3f, $cf, $f3, $fc
-
 mask
 	.byte $c0, $30, $0c, $03, $c0, $30, $0c, $03, $c0, $30, $0c, $03, $c0, $30, $0c, $03
 	.byte $c0, $30, $0c, $03, $c0, $30, $0c, $03, $c0, $30, $0c, $03, $c0, $30, $0c, $03

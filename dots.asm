@@ -19,19 +19,84 @@ PLOTADDR          = $02
 .include "colors.inc"
 
 COLOR0            = BLACK
-COLOR1            = WHITE
-COLOR2            = LIGHT_BLUE
-COLOR3            = BLUE
+COLOR1            = YELLOW
+COLOR2            = ORANGE
+COLOR3            = RED
+
+COLOR0B           = BLACK
+COLOR1B           = WHITE
+COLOR2B           = LIGHT_BLUE
+COLOR3B           = BLUE
 
 *               = $8000
 
                 jsr     init_vic
+                
+                
 
--               jsr     effect1
+-               lda     #$00
+                sta     dcnt
+                inc     dots
+                inc     dots
+                inc     dots
+                inc     dots
+                beq     +
+                jsr     effect1
                 jsr     switch_vic_bank
                 jmp     -
 
++
+-               
+                inc     dots
+                inc     dots
+                beq     +
+                jsr     effect2
+                jsr     switch_vic_bank
+                jmp     -
+
+loop
++
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+
+                jsr     setup_color2
+                jsr     effect3
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+-               
+                inc     dots
+                inc     dots
+                beq     +
+                jsr     effect3
+                jsr     switch_vic_bank
+                jmp     -
+
++
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+
+                jsr     effect2
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+                jsr     switch_vic_bank
+-               
+                inc     dots
+                inc     dots
+                beq     +               
+                jsr     effect2
+                jsr     switch_vic_bank
+                jmp     -
++               jmp     loop
+
+
 .align 256
+dcnt  .byte $00
+dots  .byte $00
 count .byte $00
 posx1 .byte $00
 posy1 .byte $40
@@ -77,15 +142,125 @@ effect1_next:   ldx     posx1
                 adc     #50
                 tay
 
+                lda     dcnt
+                cmp     dots
+                beq     +
                 jsr     plot
-
-                dec     count
+                inc     dcnt
++               dec     count
                 bne     effect1_next
 
                 inc     posx1
                 inc     posy1
                 inc     posy1
                 rts
+
+
+effect2         lda     #$00
+                sta     count
+
+effect2_next:   ldx     posx1
+                lda     sin, x
+                inx
+                stx     posx1
+
+                ldx     posx2
+                clc
+                adc     sin, x
+                shr
+                inx
+                inx
+                inx
+                stx     posx2
+
+                clc
+                adc     #30
+                tax
+
+                ldy     posy1
+                lda     sin, y
+                iny
+                sty     posy1
+
+                ldy     posy2
+                clc
+                adc     sin, y
+                shr
+                iny
+                iny
+                sty     posy2
+
+                clc
+                adc     #50
+                tay
+
+                jsr     plot
+
++               dec     count
+                bne     effect2_next
+
+                inc     posx1
+                inc     posy1
+                inc     posy1
+                rts
+
+
+effect3         lda     #$00
+                sta     count
+
+effect3_next:   ldx     posx1
+                lda     sin, x
+                inx
+                inx
+                inx
+                stx     posx1
+
+                ldx     posx2
+                clc
+                adc     sin, x
+                shr
+                inx
+                inx
+                stx     posx2
+
+                clc
+                adc     #30
+                tax
+
+                ldy     posy1
+                lda     sin, y
+                iny
+                iny
+                iny
+                iny
+                sty     posy1
+
+                ldy     posy2
+                clc
+                adc     sin, y
+                shr
+                iny
+                sty     posy2
+
+                clc
+                adc     #50
+                tay
+
+                jsr     plot
+
++               dec     count
+                bne     effect3_next
+
+                inc     posx1
+                inc     posx1
+                inc     posx1
+                inc     posy1
+                inc     posy1
+                inc     posx2
+                inc     posx2
+                inc     posy2
+                rts
+
 
 ; =============================
 ; VIC bank váltás
@@ -158,9 +333,12 @@ plot2           clc
 ; ===========================
 ; VIC inicializálása
 ; ===========================
-init_vic        jsr     setup_color
-                jsr     clearscreen1
-                jsr     clearscreen2
+init_vic        
+                lda     #$0b
+                sta     $d011
+
+                jsr     setup_color
+                jsr     clearscreen
 
                 ; Background color: 00
                 lda     #(COLOR0)
@@ -184,20 +362,30 @@ init_vic        jsr     setup_color
 ; ===========================
 setup_color     lda     #$00
                 tax
-                ; white + light blue
 -               lda     #((COLOR3 << 4) + COLOR2)
-                .for i := COLOR1_ADDRESS1, i < COLOR1_ADDRESS1 + $400, i += $100
-                sta     i, x
+                .for i := 0, i < $400, i += $100
+                sta     COLOR1_ADDRESS1 + i, x
+                sta     COLOR1_ADDRESS2 + i, x
                 .next
-                ; white + light blue
-                lda     #((COLOR3 << 4) + COLOR2)
-                .for i := COLOR1_ADDRESS2, i < COLOR1_ADDRESS2 + $400, i += $100
-                sta     i, x
-                .next
-                ; blue
                 lda     #(COLOR1)
-                .for i := COLOR2_ADDRESS, i < COLOR2_ADDRESS + $400, i += $100
-                sta     i, x
+                .for i := 0, i < $400, i += $100
+                sta     COLOR2_ADDRESS + i, x
+                .next
+                dex
+                beq     +
+                jmp     -
++               rts
+
+setup_color2    lda     #$00
+                tax
+-               lda     #((COLOR3B << 4) + COLOR2B)
+                .for i := 0, i < $400, i += $100
+                sta     COLOR1_ADDRESS1 + i, x
+                sta     COLOR1_ADDRESS2 + i, x
+                .next
+                lda     #(COLOR1B)
+                .for i := 0, i < $400, i += $100
+                sta     COLOR2_ADDRESS + i, x
                 .next
                 dex
                 beq     +
@@ -205,27 +393,14 @@ setup_color     lda     #$00
 +               rts
 
 ; ===========================
-; 1. képernyő törlése
+; Képernyő törlése
 ; ===========================
-clearscreen1    lda     #$00
+clearscreen     lda     #$00
                 tax
 -               lda     #$00
-                .for i := BITMAP_ADDRESS1, i < BITMAP_ADDRESS1 + $2000, i += $100
-                sta     i, x
-                .next
-                dex
-                beq     +
-                jmp     -
-+               rts
-
-; ===========================
-; 2. képernyő törlése
-; ===========================
-clearscreen2    lda     #$00
-                tax
--               lda     #$00
-                .for i := BITMAP_ADDRESS2, i < BITMAP_ADDRESS2 + $2000, i += $100
-                sta     i, x
+                .for i := 0, i < $2000, i += $100
+                sta     BITMAP_ADDRESS1 + i, x
+                sta     BITMAP_ADDRESS2 + i, x
                 .next
                 dex
                 beq     +
