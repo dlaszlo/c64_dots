@@ -574,7 +574,7 @@ setup_color4
                 sta     COLOR1_ADDRESS1 + (ya3 * 40) + 19, x
                 sta     COLOR1_ADDRESS2 + (ya3 * 40) + 19, x
                 lda     #(COLOR1B)
-                sta     COLOR2_ADDRESS  + (ya3 * 40) + 20, x
+                sta     COLOR2_ADDRESS  + (ya3 * 40) + 19, x
                 .next
                 dex
                 beq     +
@@ -603,7 +603,7 @@ clearscreen     lda     #$00
 ; ===========================
 fade1           lda     #$00
                 tax
--               .for i := $0, i < $2000, i += $100
+-               .for i := $700, i < $1800, i += $100
                 lda     BITMAP_ADDRESS1 + i, x
                 cmp     #00
                 beq     +
@@ -621,7 +621,7 @@ fade1           lda     #$00
 ; ===========================
 fade2           lda     #$00
                 tax
--               .for i := $0, i < $2000, i += $100
+-               .for i := $700, i < $1800, i += $100
                 lda     BITMAP_ADDRESS2 + i, x
                 cmp     #00
                 beq     +
