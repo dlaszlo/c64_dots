@@ -16,9 +16,9 @@ $(PROGRAM).prg: $(PROGRAM).tmp
 
 $(PROGRAM).tmp: $(PROGRAM).asm
 	$(NODE) tables.js
-	$(TASS) --list=$@.lst -o $@ $<
+	$(TASS) -C -a $< -o $@ -L $(PROGRAM).lst --verbose-list -l $(PROGRAM).sym
 
 .INTERMEDIATE: $(PROGRAM).tmp
 .PHONY: all clean
 clean:
-	$(RM) $(PROGRAM).prg $(PROGRAM).tmp $(PROGRAM).tmp.lst $(PROGRAM).tmp.b2
+	$(RM) $(PROGRAM).prg $(PROGRAM).tmp $(PROGRAM).lst $(PROGRAM).sym $(PROGRAM).tmp.b2

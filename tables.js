@@ -22,7 +22,7 @@ const calcx = (i) => (i >> 2) << 3
 
 const calcm = (i, m) => m[i & 3]
 
-const sint = (i) => Math.sin(i * Math.PI / 128.0) * 50 + 50
+const sint = (i) => Math.sin(i * Math.PI / 128.0) * 30 
 
 const fade = (i) => {
     res = 0
@@ -60,7 +60,7 @@ dump(content, "sin", i => hex(lowbyte(sint(i))))
 dump(content, "fade", i => hex(lowbyte(fade(i))))
 
 const data = content.join('')
-fs.writeFile('tables.inc', data, 'UTF-8', function (err) {
+fs.writeFile('tables.asm', data, 'UTF-8', function (err) {
     if (err) return console.log(err);
-    console.log('tables.js > tables.inc');
+    console.log('tables.js > tables.asm');
 });
