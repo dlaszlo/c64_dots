@@ -1,6 +1,20 @@
                 .cpu "6502"
                 .enc "screen"
 
+.include "macros.asm"
+
+*               = $8000
+.dsection       code
+.cerror         * > $9fff, "Program too long!"
+
+*               = $a000
+.dsection       data
+.cerror         * > $afff, "Data too long!"
+
+
+; ----------------------------------------
+; VIC
+; ----------------------------------------
 VIC_MEM_SCHEMA    = #%00011010          ; Bitmap is at $2000, Screenmem is at $0000; Charmem is at $0800
 
 VIC_BANK1         = #%00000011          ; Bank 0
@@ -14,51 +28,57 @@ BITMAP_ADDRESS2   = VIC_BASE_ADDRESS2 + $2000
 COLOR1_ADDRESS2   = VIC_BASE_ADDRESS2 + $0400
 COLOR2_ADDRESS    = $d800
 
-PLOTADDR          = $02
-
-.include "macros.asm"
-
 COLOR0            = BLACK
 COLOR1            = WHITE
 COLOR2            = LIGHT_BLUE
 COLOR3            = BLUE
 
-*               = $8000
+.section        zeropage
+plotaddr          .addr ?
+fade1_curr_addr   .addr ?
+fade2_curr_addr   .addr ?
+.send
+
+
+; ----------------------------------------
+; *ENTRY
+; ----------------------------------------
+.section        code
 
                 jsr     init
-                
 -               
-                jsr     reset_plot_addr
+                seta    gen_code.fade1, fade1_curr_addr
+                seta    gen_code.fade2, fade2_curr_addr
 
                 ; 6 képernyőnként kell resetelni a plot rutinban a pointereket,
                 ; ezért itt hatszor meghívjuk az effektet
                 .for i := 0, i < 6, i += 1
                 jsr     calc_framerate
-                jsr     effect2
+                jsr     effect1
                 jsr     switch_vic_bank
                 .next
 
                 jmp     -
 
-.align 256
-frame_rate      .byte $00
-current_frame   .byte $00
-count           .byte $00
-posx1           .byte $00
-posy1           .byte $40
-posx2           .byte $20
-posy2           .byte $50
+; ----------------------------------------
+; VIC bank váltás
+; Rutinok címeinek a beállítása
+; ----------------------------------------
 
-calc_framerate  lda     current_frame
-                sta     frame_rate
+.section        data
+count           .byte   $00
+posx1           .byte   $00
+posy1           .byte   $40
+posx2           .byte   $20
+posy2           .byte   $50
+.send
+
+effect1         .proc
+
                 lda     #$00
-                sta     current_frame
-                rts
-
-effect2         lda     #$00
                 sta     count
 
-effect2_next:   ldx     posx1
+effect_next:    ldx     posx1
                 lda     sin, x
                 inx
                 stx     posx1
@@ -91,47 +111,45 @@ effect2_next:   ldx     posx1
                 jsr     plot
 
 +               dec     count
-                bne     effect2_next
+                bne     effect_next
 
                 inc     posx1
                 inc     posy1
                 inc     posy1
                 rts
+                .pend
 
 ; ----------------------------------------
 ; VIC bank váltás
 ; Rutinok címeinek a beállítása
 ; ----------------------------------------
-switch_vic_bank jmp swb1
+switch_vic_bank .proc
 
-swb1
+switchjmp       jmp swb1
 
-                ; A következő híváskor a VIC bank váltó rutin az swb2 lesz.
-                #mod_addr   swb2, switch_vic_bank
+swb1            ; A következő híváskor a VIC bank váltó rutin az swb2 lesz.
+                moda    swb2, switchjmp
 
                 ; A plotter rutin mostantól a plot2 lesz
                 ; (mivel az 1-es VIC-blank-ot mutatjuk a másikat rajzoljuk)
-                #mod_addr   plot2, plot           
+                moda    plot.plot2, plot.plotjmp
                                                 
                 lda     $dd00
                 and     #%11111100              ; VIC bank mask
                 ora     VIC_BANK1
                 sta     $dd00
-
                 ; inicializálás után ez a jmp a fade2-re fog mutatni,
                 ; de inicializálás közben nem kell meghívni a fade2-t,
                 ; ezért mutat az rts-re
 fade2jmp        jmp     +                       
 +               rts
 
-swb2
-
-                ; A következő híváskor a VIC bank váltó rutin az swb1 lesz.
-                #mod_addr swb1, switch_vic_bank 
+swb2            ; A következő híváskor a VIC bank váltó rutin az swb1 lesz.
+                moda    swb1, switchjmp 
 
                 ; A plotter rutin mostantól a plot1 lesz
                 ; (mivel az 1-es VIC-blank-ot mutatjuk a másikat rajzoljuk)
-                #mod_addr plot1, plot
+                moda    plot.plot1, plot.plotjmp
 
                 lda     $dd00
                 and     #%11111100              ; VIC bank mask
@@ -144,108 +162,90 @@ swb2
 fade1jmp        jmp     +
 +               rts
 
+                .pend
+
 ; ----------------------------------------
 ; Képpont rajzolása
 ; Paraméterek: x, y
 ; ----------------------------------------
-plot            jmp     plot1
+plot            .proc
+
+plotjmp         jmp     plot1
 
 plot1           clc                
                 lda     ytablelow1, y
                 adc     xtablelow, x
-                sta     PLOTADDR
-plot1add1       sta     FADE1_LDA_LO
-plot1add2       sta     FADE1_STA_LO
+                sta     plotaddr
+
                 lda     ytablehigh1, y
                 adc     xtablehigh, x
-                sta     PLOTADDR + 1
-plot1add3       sta     FADE1_LDA_HI
-plot1add4       sta     FADE1_STA_HI
+                sta     plotaddr + 1
+
+                ldy     gen_code.FADE_LDA_OFFSET + 1
+                sta     (fade1_curr_addr), y
+                ldy     gen_code.FADE_STA_OFFSET + 1
+                sta     (fade1_curr_addr), y
+
                 ldy     #$00
-                lda     (PLOTADDR), y
+                lda     (plotaddr), y
                 ora     mask, x
-                sta     (PLOTADDR), y
+                sta     (plotaddr), y
 
-                #add_word plot1add1 + 1, FADE_INC_SIZ
-                #add_word plot1add2 + 1, FADE_INC_SIZ
-                #add_word plot1add3 + 1, FADE_INC_SIZ
-                #add_word plot1add4 + 1, FADE_INC_SIZ
+                lda     plotaddr
+                ldy     gen_code.FADE_LDA_OFFSET
+                sta     (fade1_curr_addr), y
+                ldy     gen_code.FADE_STA_OFFSET
+                sta     (fade1_curr_addr), y
 
+                lda     fade1_curr_addr
+                adc     #size(gen_code.fade_template)
+                sta     fade1_curr_addr
+                bcs     +
                 rts
++               inc     fade1_curr_addr + 1
+                rts
+
 
 plot2           clc                
                 lda     ytablelow2, y
                 adc     xtablelow, x
-                sta     PLOTADDR
-plot2add1       sta     FADE2_LDA_LO
-plot2add2       sta     FADE2_STA_LO
+                sta     plotaddr
+
                 lda     ytablehigh2, y
                 adc     xtablehigh, x
-                sta     PLOTADDR + 1
-plot2add3       sta     FADE2_LDA_HI
-plot2add4       sta     FADE2_STA_HI
+                sta     plotaddr + 1
+
+                ldy     gen_code.FADE_LDA_OFFSET + 1
+                sta     (fade2_curr_addr), y
+                ldy     gen_code.FADE_STA_OFFSET + 1
+                sta     (fade2_curr_addr), y
+
                 ldy     #$00
-                lda     (PLOTADDR), y
+                lda     (plotaddr), y
                 ora     mask, x
-                sta     (PLOTADDR), y
+                sta     (plotaddr), y
 
-                #add_word plot2add1 + 1, FADE_INC_SIZ
-                #add_word plot2add2 + 1, FADE_INC_SIZ
-                #add_word plot2add3 + 1, FADE_INC_SIZ
-                #add_word plot2add4 + 1, FADE_INC_SIZ
+                lda     plotaddr
+                ldy     gen_code.FADE_LDA_OFFSET
+                sta     (fade2_curr_addr), y
+                ldy     gen_code.FADE_STA_OFFSET
+                sta     (fade2_curr_addr), y
 
+                lda     fade2_curr_addr
+                adc     #size(gen_code.fade_template)
+                sta     fade2_curr_addr
+                bcs     +
+                rts
++               inc     fade2_curr_addr + 1
                 rts
 
-; ----------------------------------------
-; A plot rutin címeit reseteli
-; Paraméterek: x, y
-; ----------------------------------------
-reset_plot_addr
-                mod_addr FADE1_LDA_LO, plot1add1
-                mod_addr FADE1_STA_LO, plot1add2
-                mod_addr FADE1_LDA_HI, plot1add3
-                mod_addr FADE1_STA_HI, plot1add4
-                mod_addr FADE2_LDA_LO, plot2add1
-                mod_addr FADE2_STA_LO, plot2add2
-                mod_addr FADE2_LDA_HI, plot2add3
-                mod_addr FADE2_STA_HI, plot2add4
-                rts
+                .pend
 
 ; ----------------------------------------
-; Színek beállítása
+; Inicializálás
 ; ----------------------------------------
-setup_color     lda     #$00
-                tax
--               lda     #((COLOR3 << 4) + COLOR2)
-                .for i := 0, i < $400, i += $100
-                sta     COLOR1_ADDRESS1 + i, x
-                sta     COLOR1_ADDRESS2 + i, x
-                .next
-                lda     #(COLOR1)
-                .for i := 0, i < $400, i += $100
-                sta     COLOR2_ADDRESS + i, x
-                .next
-                dex
-                beq     +
-                jmp     -
-+               rts
-
-; ----------------------------------------
-; Képernyő törlése
-; ----------------------------------------
-clearscreen     lda     #$00
-                tax
--               lda     #$00
-                .for i := 0, i < $2000, i += $100
-                sta     BITMAP_ADDRESS1 + i, x
-                sta     BITMAP_ADDRESS2 + i, x
-                .next
-                dex
-                beq     +
-                jmp     -
-+               rts
-
-init    		sei					; Set interrupt flag -> disable IRQs
+init    		.proc
+                sei					; Set interrupt flag -> disable IRQs
 
                 ; #$37 (#%00110111) - BASIC ON  ($a000-$bfff) / KERNAL ON  ($e000-$ffff) / IO AREA ON
                 ; #$36 (#%00110110) - BASIC OFF ($a000-$bfff) / KERNAL ON  ($e000-$ffff) / IO AREA ON
@@ -264,7 +264,7 @@ init    		sei					; Set interrupt flag -> disable IRQs
                 sta		$d01a		; Enable raster interrupt (bit0), RASTER IRQ
 
                 ; Set NMI vector
-                #set_addr   nmi, $fffa
+                seta    nmi, $fffa
 
                 lda		#$00		; stop Timer A
                 sta		$dd0e
@@ -278,7 +278,7 @@ init    		sei					; Set interrupt flag -> disable IRQs
                 jsr     init_vic
 
                 ; Set up the IRQ vector - into the Hardware Interrupt Vector
-                #set_addr   irq10, $fffe
+                seta    irq10, $fffe
 
                 lda		#$0
                 sta		$d012		; Set the rasterline to generate the interrupt at line #64
@@ -292,25 +292,29 @@ init    		sei					; Set interrupt flag -> disable IRQs
 
                 cli					; Clear interrupt flag -> enable IRQs
 
+                jsr     gen_code
+
                 rts
-; ===========================
+
 ; VIC inicializálása
-; ===========================
 init_vic        lda     #$0b
                 sta     $d011
 
-                jsr     setup_color
-                jsr     clearscreen
-
-                ; Background color
-                lda     #(COLOR0)
+                ; Clear screen and set colors
+                lda     #(COLOR0)   ; Background color
                 sta     $d020
                 sta     $d021
-                jsr     switch_vic_bank
+                fill    BITMAP_ADDRESS1, #8000, #0
+                fill    BITMAP_ADDRESS2, #8000, #0
+                fill    COLOR1_ADDRESS1, #1000, #((COLOR3 << 4) + COLOR2)
+                fill    COLOR1_ADDRESS2, #1000, #((COLOR3 << 4) + COLOR2)
+                fill    COLOR2_ADDRESS,  #1000, #(COLOR1)
 
                 ; VIC mem schema
                 lda     VIC_MEM_SCHEMA
                 sta     $d018
+
+                jsr     switch_vic_bank
 
                 ; Multicolor bitmap mode
                 lda     #$3b
@@ -318,59 +322,93 @@ init_vic        lda     #$0b
                 lda     #$18
                 sta     $d016
 
-                #mod_addr fade1, fade1jmp
-                #mod_addr fade2, fade2jmp
-
+                moda    gen_code.fade1, switch_vic_bank.fade1jmp
+                moda    gen_code.fade2, switch_vic_bank.fade2jmp
                 rts
+
+                .pend
+
+; ----------------------------------------
+; fade1, fade2 rutinok generálása
+; ----------------------------------------
+gen_code        .proc
+                cpyb    fade_template, fade1, #size(fade_template), #768
+                cpyb    fade_template, fade2, #size(fade_template), #768
+                lda     rts_template
+                sta     fade1 + (size(fade_template) * 768)
+                sta     fade2 + (size(fade_template) * 768)
+                rts
+
+fade_template   .block
+                lda     dummy
+*               = * - 2
+lda_addr        .word   ?
+                tay
+                lda     fade, y
+                sta     dummy
+*               = * - 2
+sta_addr        .word   ?
+                .bend
+
+rts_template    .block
+                rts
+                .bend
+
+.section        data
+dummy           .byte   $00
+.send
+
+; A fade rutinon belül az LDA paraméterének relatív memóriacíme
+FADE_LDA_OFFSET     = #(fade_template.lda_addr - fade_template)
+; A fade rutinon belül az STA paraméterének relatív memóriacíme
+FADE_STA_OFFSET     = #(fade_template.sta_addr - fade_template)       
+
+fade1             = $B000
+fade2             = $E000
+
+                .pend
+
+; ----------------------------------------
+; framerate mérése
+; ----------------------------------------
+calc_framerate  .proc
+                lda     current_frame
+                sta     frame_rate
+                lda     #$00
+                sta     current_frame
+                rts
+.section        data
+frame_rate      .byte   $00
+current_frame   .byte   $00
+.send                
+                .pend
 
 ; ----------------------------------------
 ; IRQ #10 / Playing the music
 ; ----------------------------------------
-irq10           sta		rea10+1		; Preserve A,X and Y registers
+irq10           .proc
+                sta		rea10+1		; Preserve A,X and Y registers
                 stx		rex10+1
                 sty		rey10+1
 
+                inc     calc_framerate.current_frame
 ;               jsr		$e003
-                inc     current_frame
 
                 asl		$d019		; Acknowledge IRQ				
 rea10           lda		#$00    	; Reload A,X,and Y registers
 rex10           ldx		#$00
 rey10           ldy		#$00
-nmi             rti		
+                rti		
+                .pend
 
-dummy           .byte 0
+; ----------------------------------------
+; IRQ #10 / Playing the music
+; ----------------------------------------
+nmi             .proc
+                rti
+                .pend
+.send
 
-.align          256
+.section        data
 .include        "tables.asm"
-
-FADE_INC_SIZ = #10           ; A fade rutinokban 1 pixelhez 10 bájt hosszú kód kell
-FADE1_LDA_LO = fade1 + 1    ; A fade rutinokban itt szerepel az első LDA-hoz a cím
-FADE1_LDA_HI = fade1 + 2
-FADE2_LDA_LO = fade2 + 1
-FADE2_LDA_HI = fade2 + 2
-
-FADE1_STA_LO = fade1 + 8    ; A fade rutinokban itt szerepel az első STA-hoz a cím
-FADE1_STA_HI = fade1 + 9
-FADE2_STA_LO = fade2 + 8
-FADE2_STA_HI = fade2 + 9
-
-
-.align          256
-fade1           .for i := 0, i < 768, i += 1
-                lda     dummy
-                tay
-                lda     fade, y
-                sta     dummy
-                .next
-                rts
-
-.align          256
-fade2           .for i := 0, i < 768, i += 1
-                lda     dummy
-                tay
-                lda     fade, y
-                sta     dummy
-                .next
-                rts
-
+.send
