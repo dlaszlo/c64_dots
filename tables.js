@@ -22,7 +22,7 @@ const calcx = (i) => (i >> 2) << 3
 
 const calcm = (i, m) => m[i & 3]
 
-const sint = (i) => Math.sin(i * Math.PI / 128.0) * 30 
+const sint = (i, a, o) => Math.sin(i * Math.PI / 128.0) * a + o 
 
 const fade = (i) => {
     res = 0
@@ -56,7 +56,9 @@ dump(content, "xtablelow", i => hex(lowbyte(calcx(overflow(i, 160)))))
 dump(content, "xtablehigh", i => hex(highbyte(calcx(overflow(i, 160)))))
 // dump(content, "maskand", i => hex(lowbyte(calcm(i, maskAnd))))
 dump(content, "mask", i => hex(lowbyte(calcm(i, maskOr3))))
-dump(content, "sin", i => hex(lowbyte(sint(i))))
+dump(content, "sin", i => hex(lowbyte(sint(i, 30, 0))))
+dump(content, "sinx", i => hex(lowbyte(sint(i, 30, 80))))
+dump(content, "siny", i => hex(lowbyte(sint(i, 30, 100))))
 dump(content, "fade", i => hex(lowbyte(fade(i))))
 
 const data = content.join('')

@@ -40,8 +40,8 @@ cnt2            .addr ?
 ;   src_addr: Beirandó cím
 ;   src_addr: Utasítás címe
 ; ----------------------------------------
-moda            .function src_addr, dst_addr
-                seta    src_addr, dst_addr + 1
+mod_addr        .function src_addr, dst_addr
+                set_addr    src_addr, dst_addr + 1
                 .endf
 
 ; ----------------------------------------
@@ -50,8 +50,8 @@ moda            .function src_addr, dst_addr
 ; Paraméterek:
 ;   opcode_addr: Utasítás címe
 ; ----------------------------------------
-inca            .function opcode_addr
-                incw    opcode_addr + 1
+inc_addr        .function opcode_addr
+                inc16   opcode_addr + 1
                 .endf
 
 ; ----------------------------------------
@@ -61,12 +61,27 @@ inca            .function opcode_addr
 ;   src_addr: memória cím
 ;   dst_addr: cél cím
 ; ----------------------------------------
-seta            .function src_addr, dst_addr
+set_addr        .function src_addr, dst_addr
                 ldx     #<src_addr
                 stx     dst_addr
                 ldx     #>src_addr
                 stx     dst_addr + 1
                 .endf
+
+; ----------------------------------------
+; Word másolása
+;
+; Paraméterek:
+;   src: forrás cím
+;   dst: cél cím
+; ----------------------------------------
+cpy16           .function src, dst
+                lda     src
+                sta     dst
+                lda     src + 1
+                sta     dst + 1
+                .endf
+
 
 ; ----------------------------------------
 ; Word beírása adott címre
@@ -75,7 +90,7 @@ seta            .function src_addr, dst_addr
 ;   val:      érték
 ;   dst_addr: cél cím
 ; ----------------------------------------
-setw            .function val, dst_addr
+set16            .function val, dst_addr
                 ldx     <val
                 stx     dst_addr
                 ldx     >val
@@ -88,7 +103,7 @@ setw            .function val, dst_addr
 ; Paraméterek:
 ;   addr: Memóriacím, ahol a word van
 ; ----------------------------------------
-incw            .function addr
+inc16            .function addr
                 inc     addr
                 bne     +
                 inc     addr + 1
@@ -100,7 +115,7 @@ incw            .function addr
 ; Paraméterek:
 ;   addr: Memóriacím, ahol a word van
 ; ----------------------------------------
-decw            .function addr
+dec16            .function addr
                 ldy     addr
                 bne     +
                 dec     addr + 1
@@ -115,7 +130,7 @@ decw            .function addr
 ;   word: A word, amit ellenőrzünk
 ;   addr: Cím, ahova ugrani kell, ha nem nulla a word értéke
 ; ----------------------------------------
-bnew            .function val, addr
+bne16            .function val, addr
                 lda     val
                 bne     addr
                 lda     val + 1
@@ -130,15 +145,15 @@ bnew            .function val, addr
 ;   count: byte-ok száma
 ;   val:  Bájt, amivel feltöltjük a memóriát
 ; ----------------------------------------
-fill            .function addr, count, val
-                setw    count, cnt1
-                seta    addr,  ptr1
+fill_block      .function addr, count, val
+                set16   count, cnt1
+                set_addr    addr,  ptr1
 -               ldy     #00
                 lda     val
                 sta     (ptr1), y
-                incw    ptr1
-                decw    cnt1
-                bnew    cnt1, -
+                inc16    ptr1
+                dec16   cnt1
+                bne16   cnt1, -
                 .endf
 
 ; ----------------------------------------
@@ -150,18 +165,28 @@ fill            .function addr, count, val
 ;   block_size: A template kód mérete
 ;   count:      A template kódot ennyiszer másoljuk egymás után
 ; ----------------------------------------
-cpyb            .function src_addr, dst_addr, block_size, count
-                seta    dst_addr, ptr2
-                setw    count, cnt2
--               seta    src_addr, ptr1
-                setw    block_size, cnt1
+copy_block      .function src_addr, dst_addr, block_size, count
+                set_addr dst_addr, ptr2
+                set16   count, cnt2
+-               set_addr src_addr, ptr1
+                set16   block_size, cnt1
 -               ldy     #00
                 lda     (ptr1), y
                 sta     (ptr2), y
-                incw    ptr1
-                incw    ptr2
-                decw    cnt1
-                bnew    cnt1, -
-                decw    cnt2
-                bnew    cnt2, --
+                inc16   ptr1
+                inc16   ptr2
+                dec16   cnt1
+                bne16   cnt1, -
+                dec16   cnt2
+                bne16   cnt2, --
                 .endf
+
+; ----------------------------------------
+; Új frame megvárása
+; ----------------------------------------
+wait_new_frame  .macro
+-               bit     $d011
+                bpl     -
+-               bit     $d011
+                bmi     -
+                .endm
