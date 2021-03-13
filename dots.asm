@@ -24,15 +24,38 @@ VIC_BANK2         = #%00000010          ; Bank 1
 VIC_BASE_ADDRESS1 = $0000
 BITMAP_ADDRESS1   = VIC_BASE_ADDRESS1 + $2000
 COLOR1_ADDRESS1   = VIC_BASE_ADDRESS1 + $0400
+SPRITE1_POINTER1  = VIC_BASE_ADDRESS1 + $07f8
+SPRITE2_POINTER1  = VIC_BASE_ADDRESS1 + $07f9
+SPRITE3_POINTER1  = VIC_BASE_ADDRESS1 + $07fa
+SPRITE4_POINTER1  = VIC_BASE_ADDRESS1 + $07fb
+SPRITE5_POINTER1  = VIC_BASE_ADDRESS1 + $07fc
+SPRITE6_POINTER1  = VIC_BASE_ADDRESS1 + $07fd
+SPRITE7_POINTER1  = VIC_BASE_ADDRESS1 + $07fe
+SPRITE8_POINTER1  = VIC_BASE_ADDRESS1 + $07ff
+SPRITE_DATA1      = VIC_BASE_ADDRESS1 + $0C00
 VIC_BASE_ADDRESS2 = $4000
 BITMAP_ADDRESS2   = VIC_BASE_ADDRESS2 + $2000
 COLOR1_ADDRESS2   = VIC_BASE_ADDRESS2 + $0400
+SPRITE1_POINTER2  = VIC_BASE_ADDRESS2 + $07f8
+SPRITE2_POINTER2  = VIC_BASE_ADDRESS2 + $07f9
+SPRITE3_POINTER2  = VIC_BASE_ADDRESS2 + $07fa
+SPRITE4_POINTER2  = VIC_BASE_ADDRESS2 + $07fb
+SPRITE5_POINTER2  = VIC_BASE_ADDRESS2 + $07fc
+SPRITE6_POINTER2  = VIC_BASE_ADDRESS2 + $07fd
+SPRITE7_POINTER2  = VIC_BASE_ADDRESS2 + $07fe
+SPRITE8_POINTER2  = VIC_BASE_ADDRESS2 + $07ff
+SPRITE_DATA2      = VIC_BASE_ADDRESS2 + $0C00
+
 COLOR2_ADDRESS    = $d800
 
 COLOR0            = BLACK
 COLOR1            = WHITE
 COLOR2            = LIGHT_BLUE
 COLOR3            = BLUE
+
+SPRITE_COLOR1     = YELLOW
+SPRITE_COLOR2     = ORANGE
+SPRITE_COLOR3     = BROWN
 
 .section        data
 fade1_curr_addr   .addr ?
@@ -236,6 +259,9 @@ init_vic        lda     #$0b
                 fill_block  COLOR1_ADDRESS2, #1000, #((COLOR3 << 4) + COLOR2)
                 fill_block  COLOR2_ADDRESS,  #1000, #(COLOR1)
 
+                copy_block  sprite0, SPRITE_DATA1, #(64 * 8), #1 
+                copy_block  sprite0, SPRITE_DATA2, #(64 * 8), #1 
+
                 ; VIC mem schema
                 lda     VIC_MEM_SCHEMA
                 sta     $d018
@@ -247,6 +273,91 @@ init_vic        lda     #$0b
                 sta     $d011
                 lda     #$18
                 sta     $d016
+
+                lda     #(SPRITE_COLOR3)
+                sta     $d025
+                lda     #(SPRITE_COLOR1)
+                sta     $d026
+                lda     #(SPRITE_COLOR2)
+                sta     $d027
+                sta     $d028
+                sta     $d029
+                sta     $d02a
+                sta     $d02b
+                sta     $d02c
+                sta     $d02d
+                sta     $d02e
+
+SPRITE_POS = (380 / 2) - (30 * 8 / 2)
+
+                lda     #(SPRITE_POS + (30 * 0))
+                sta     $d000
+                lda     #(SPRITE_POS + (30 * 1))
+                sta     $d002
+                lda     #(SPRITE_POS + (30 * 2))
+                sta     $d004
+                lda     #(SPRITE_POS + (30 * 3))
+                sta     $d006
+                lda     #(SPRITE_POS + (30 * 4))
+                sta     $d008
+                lda     #(SPRITE_POS + (30 * 5))
+                sta     $d00a
+                lda     #(SPRITE_POS + (30 * 6))
+                sta     $d00c
+                lda     #((SPRITE_POS + (30 * 7)) & 255) 
+                sta     $d00e
+
+                lda     #%10000000
+                sta     $d010
+
+                lda     #140
+                sta     $d001
+                sta     $d003
+                sta     $d005
+                sta     $d007
+                sta     $d009
+                sta     $d00b
+                sta     $d00d
+                sta     $d00f
+
+                lda     #$ff 
+                sta     $d015
+                
+                lda     #$00
+                sta     $d017
+                sta     $d01e
+                sta     $d01f
+
+                lda     #$00
+                sta     $d01b
+
+                lda     #$ff
+                sta     $d01c
+
+                lda     #$30
+                sta     SPRITE1_POINTER1
+                sta     SPRITE1_POINTER2
+                lda     #$31
+                sta     SPRITE2_POINTER1
+                sta     SPRITE2_POINTER2
+                lda     #$32
+                sta     SPRITE3_POINTER1
+                sta     SPRITE3_POINTER2
+                lda     #$33
+                sta     SPRITE4_POINTER1
+                sta     SPRITE4_POINTER2
+                lda     #$34
+                sta     SPRITE5_POINTER1
+                sta     SPRITE5_POINTER2
+                lda     #$35
+                sta     SPRITE6_POINTER1
+                sta     SPRITE6_POINTER2
+                lda     #$36
+                sta     SPRITE7_POINTER1
+                sta     SPRITE7_POINTER2
+                lda     #$37
+                sta     SPRITE8_POINTER1
+                sta     SPRITE8_POINTER2
 
                 rts
 
@@ -264,10 +375,9 @@ gen_code        .proc
                 rts
 
 fade_template   .block
-                lda     dummy
+                ldy     dummy
 *               = * - 2
 lda_addr        .word   ?
-                tay
                 lda     fade, y
                 sta     dummy
 *               = * - 2
@@ -339,4 +449,5 @@ nmi             .proc
 
 .section        data
 .include        "tables.asm"
+.include        "sprites.asm"
 .send
