@@ -60,6 +60,7 @@ SPRITE_COLOR3     = BROWN
 .section        data
 fade1_curr_addr   .addr ?
 fade2_curr_addr   .addr ?
+cnt_start_effect  .byte 42
 .send
 
 ; ----------------------------------------
@@ -68,8 +69,37 @@ fade2_curr_addr   .addr ?
 .section        code
 
                 jsr     init
-                jsr     effect1.init
+                jsr     effect0.init
+
 -               
+                set_addr    gen_code.fade1, fade1_curr_addr
+                set_addr    gen_code.fade2, fade2_curr_addr
+
+                ; 6 képernyőnként kell resetelni a plot rutinban a pointereket,
+                ; ezért itt hatszor meghívjuk az effektet
+                .for i := 0, i < 3, i += 1
+                
+                cpy16   fade2_curr_addr, fade_curr_addr
+                jsr     calc_framerate
+                jsr     effect0
+                jsr     switch_bank2
+                jsr     gen_code.fade1
+                cpy16   fade_curr_addr, fade2_curr_addr
+
+                cpy16   fade1_curr_addr, fade_curr_addr
+                jsr     calc_framerate
+                jsr     effect0
+                jsr     switch_bank1
+                jsr     gen_code.fade2
+                cpy16   fade_curr_addr, fade1_curr_addr
+
+                .next
+
+                dec     cnt_start_effect
+                beq     +
+                jmp     -
++
+-
                 set_addr    gen_code.fade1, fade1_curr_addr
                 set_addr    gen_code.fade2, fade2_curr_addr
 
@@ -101,12 +131,92 @@ fade2_curr_addr   .addr ?
 ; ----------------------------------------
 
 .section        zeropage
+cnt0            .byte   ?
 count           .byte   ?
 posx1           .byte   ?
 posy1           .byte   ?
 posx2           .byte   ?
 posy2           .byte   ?
+prevx           .byte   ?
+prevy           .byte   ?
 .send
+
+effect0         .proc
+
+                lda     #$00
+                sta     count
+
+                clc
+effect_next:    ldx     posx1
+                lda     sinx, x
+                inx
+                stx     posx1
+                ldx     posx2
+                adc     sin, x
+                inx
+                inx
+                inx
+                stx     posx2
+                tax
+
+                ldy     posy1
+                lda     siny, y
+                iny
+                sty     posy1
+                ldy     posy2
+                adc     sin, y
+                iny
+                iny
+                sty     posy2
+                tay
+
+                lda     cnt0
+                cmp     count
+                bcs     +
+                ldx     prevx
+                ldy     prevy
+                jmp     ++
++
+                stx     prevx
+                sty     prevy
++               #plot
+
+
+                dec     count
+                bne     effect_next
+                
+                lda     cnt0
+                inc     cnt0
+                tay
+                lsr
+                lsr     
+                lsr     
+                lsr     
+                lsr     
+                tay     
+                lda     sprite_enabled, y
+                sta     $d015
+                
+                
+                inc     posx1
+                inc     posy1
+                inc     posy1
+                rts
+
+init            lda     #$00
+                sta     count
+                sta     posx1
+                lda     #$40
+                sta     posy1
+                lda     #$20
+                sta     posx2
+                lda     #$50
+                sta     posy2
+                lda     #$00
+                sta     cnt0
+                rts
+
+                .pend
 
 effect1         .proc
 
@@ -145,17 +255,6 @@ effect_next:    ldx     posx1
                 inc     posx1
                 inc     posy1
                 inc     posy1
-                rts
-
-init            lda     #$00
-                sta     count
-                sta     posx1
-                lda     #$40
-                sta     posy1
-                lda     #$20
-                sta     posx2
-                lda     #$50
-                sta     posy2
                 rts
 
                 .pend
@@ -320,7 +419,7 @@ SPRITE_POS = (380 / 2) - (30 * 8 / 2)
                 sta     $d00d
                 sta     $d00f
 
-                lda     #$ff 
+                lda     #00
                 sta     $d015
                 
                 lda     #$00
@@ -450,4 +549,14 @@ nmi             .proc
 .section        data
 .include        "tables.asm"
 .include        "sprites.asm"
+.align          256
+sprite_enabled  .byte %00000001
+                .byte %00100001
+                .byte %00100101
+                .byte %10100101
+                .byte %10101101
+                .byte %11101101
+                .byte %11101111
+                .byte %11111111
+
 .send
